@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SSC GPA Calculator — Science Group</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0f14;
+    --surface: #13161d;
+    --surface2: #1b1f2a;
+    --border: rgba(255,255,255,0.07);
+    --border-hover: rgba(255,255,255,0.15);
+    --accent: #c8f064;
+    --accent-dim: rgba(200,240,100,0.12);
+    --accent-mid: rgba(200,240,100,0.25);
+    --text: #f0f2f5;
+    --text-muted: #7a8099;
+    --text-dim: #4a5068;
+    --danger: #ff6b6b;
+    --danger-dim: rgba(255,107,107,0.12);
+    --success: #c8f064;
+    --warning: #ffcc66;
+    --warning-dim: rgba(255,204,102,0.12);
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(200,240,100,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(200,240,100,0.03) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page {
+    position: relative;
+    z-index: 1;
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 5rem;
+  }
+
+  /* Header */
+  .header {
+    margin-bottom: 3rem;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .header-eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .header-eyebrow::before {
+    content: '';
+    width: 20px;
+    height: 1px;
+    background: var(--accent);
+    display: inline-block;
+  }
+
+  h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(28px, 5vw, 44px);
+    font-weight: 400;
+    color: var(--text);
+    line-height: 1.15;
+    margin-bottom: 10px;
+  }
+
+  h1 span { color: var(--accent); }
+
+  .header-sub {
+    font-size: 14px;
+    color: var(--text-muted);
+    max-width: 420px;
+    line-height: 1.7;
+  }
+
+  /* Grading reference */
+  .grade-ref {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    margin-bottom: 2.5rem;
+    animation: fadeUp 0.6s 0.1s ease both;
+  }
+
+  .grade-chip {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px 4px;
+    text-align: center;
+    transition: border-color 0.2s;
+  }
+
+  .grade-chip:hover { border-color: var(--border-hover); }
+
+  .grade-chip .letter {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--accent);
+    display: block;
+  }
+
+  .grade-chip .range {
+    font-size: 9px;
+    color: var(--text-dim);
+    display: block;
+    margin-top: 2px;
+  }
+
+  .grade-chip .pts {
+    font-size: 11px;
+    color: var(--text-muted);
+    display: block;
+    margin-top: 1px;
+  }
+
+  /* Section labels */
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin: 2rem 0 12px;
+  }
+
+  /* Subject card */
+  .subject-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 6px;
+    display: grid;
+    grid-template-columns: 44px 1fr 150px;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    transition: border-color 0.2s, background 0.2s;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  .subject-card:hover {
+    border-color: var(--border-hover);
+    background: var(--surface2);
+  }
+
+  .subject-card.optional-card {
+    border-color: rgba(200,240,100,0.15);
+    background: var(--accent-dim);
+  }
+
+  .subject-card.optional-card:hover {
+    border-color: rgba(200,240,100,0.3);
+  }
+
+  .code {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    background: var(--surface2);
+    border-radius: 6px;
+    padding: 4px 6px;
+    text-align: center;
+  }
+
+  .optional-card .code {
+    background: rgba(200,240,100,0.08);
+    color: var(--accent);
+  }
+
+  .subject-name {
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--text);
+  }
+
+  .opt-tag {
+    font-size: 9px;
+    font-family: 'DM Mono', monospace;
+    background: var(--accent-dim);
+    color: var(--accent);
+    border: 0.5px solid rgba(200,240,100,0.3);
+    border-radius: 4px;
+    padding: 1px 5px;
+    margin-left: 6px;
+    letter-spacing: 0.5px;
+    vertical-align: middle;
+  }
+
+  .subject-name small {
+    display: block;
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  select {
+    width: 100%;
+    background: var(--surface2);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 8px 10px;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a8099'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 28px;
+    transition: border-color 0.2s;
+  }
+
+  select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(200,240,100,0.1);
+  }
+
+  select option { background: #1b1f2a; }
+
+  /* Calculate button */
+  .calc-btn {
+    width: 100%;
+    margin-top: 2rem;
+    padding: 16px;
+    background: var(--accent);
+    color: #0d0f14;
+    border: none;
+    border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    letter-spacing: 0.3px;
+    transition: opacity 0.2s, transform 0.15s;
+    animation: fadeUp 0.5s 0.5s ease both;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .calc-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: white;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .calc-btn:hover::after { opacity: 0.08; }
+  .calc-btn:active { transform: scale(0.99); }
+
+  /* Result card */
+  .result-card {
+    margin-top: 2rem;
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 2rem;
+    display: none;
+    animation: fadeUp 0.4s ease both;
+  }
+
+  .result-card.visible { display: block; }
+  .result-card.pass { border-color: rgba(200,240,100,0.25); }
+  .result-card.fail { border-color: rgba(255,107,107,0.25); background: rgba(255,107,107,0.04); }
+
+  .result-top {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .gpa-label {
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+
+  .gpa-number {
+    font-family: 'DM Serif Display', serif;
+    font-size: 64px;
+    line-height: 1;
+    color: var(--text);
+  }
+
+  .gpa-number.green { color: var(--accent); }
+  .gpa-number.red { color: var(--danger); }
+
+  .grade-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 14px;
+    border-radius: 99px;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .grade-badge.green { background: var(--accent-dim); color: var(--accent); border: 0.5px solid rgba(200,240,100,0.3); }
+  .grade-badge.yellow { background: var(--warning-dim); color: var(--warning); border: 0.5px solid rgba(255,204,102,0.3); }
+  .grade-badge.red { background: var(--danger-dim); color: var(--danger); border: 0.5px solid rgba(255,107,107,0.3); }
+
+  .result-msg {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 6px;
+  }
+
+  /* Breakdown */
+  .breakdown-title {
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+
+  .breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 0.5px solid var(--border);
+    font-size: 13px;
+  }
+
+  .breakdown-row:last-child { border-bottom: none; }
+
+  .breakdown-row .label { color: var(--text-muted); }
+  .breakdown-row .val {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .breakdown-row.total .label { color: var(--text); font-weight: 500; }
+  .breakdown-row.total .val { color: var(--accent); font-size: 15px; }
+
+  /* Formula note */
+  .formula-note {
+    margin-top: 2.5rem;
+    padding: 1rem 1.25rem;
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-left: 2px solid var(--accent);
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.8;
+    animation: fadeUp 0.5s 0.6s ease both;
+  }
+
+  .formula-note strong { color: var(--text); font-weight: 500; }
+
+  /* Error */
+  .err {
+    background: var(--danger-dim);
+    border: 0.5px solid rgba(255,107,107,0.3);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--danger);
+    margin-top: 1rem;
+    display: none;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Stagger subject cards */
+  .subject-card:nth-child(1) { animation-delay: 0.1s; }
+  .subject-card:nth-child(2) { animation-delay: 0.15s; }
+  .subject-card:nth-child(3) { animation-delay: 0.2s; }
+  .subject-card:nth-child(4) { animation-delay: 0.25s; }
+  .subject-card:nth-child(5) { animation-delay: 0.3s; }
+  .subject-card:nth-child(6) { animation-delay: 0.35s; }
+  .subject-card:nth-child(7) { animation-delay: 0.38s; }
+  .subject-card:nth-child(8) { animation-delay: 0.41s; }
+  .subject-card:nth-child(9) { animation-delay: 0.44s; }
+
+  @media (max-width: 520px) {
+    .subject-card { grid-template-columns: 36px 1fr; }
+    .subject-card select { grid-column: 1 / -1; }
+    .grade-ref { grid-template-columns: repeat(4, 1fr); }
+    h1 { font-size: 28px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div class="header-eyebrow">Bangladesh Education Board</div>
+    <h1>SSC <span>GPA</span> Calculator</h1>
+    <p class="header-sub">Science group · Official formula · 9 compulsory + 1 optional subject</p>
+  </div>
+
+  <!-- Grade reference -->
+  <div class="grade-ref">
+    <div class="grade-chip"><span class="letter">A+</span><span class="range">80–100</span><span class="pts">5.0</span></div>
+    <div class="grade-chip"><span class="letter">A</span><span class="range">70–79</span><span class="pts">4.0</span></div>
+    <div class="grade-chip"><span class="letter">A−</span><span class="range">60–69</span><span class="pts">3.5</span></div>
+    <div class="grade-chip"><span class="letter">B</span><span class="range">50–59</span><span class="pts">3.0</span></div>
+    <div class="grade-chip"><span class="letter">C</span><span class="range">40–49</span><span class="pts">2.0</span></div>
+    <div class="grade-chip"><span class="letter">D</span><span class="range">33–39</span><span class="pts">1.0</span></div>
+    <div class="grade-chip"><span class="letter">F</span><span class="range">0–32</span><span class="pts">0.0</span></div>
+  </div>
+
+  <!-- Compulsory subjects -->
+  <div class="section-label">Compulsory subjects (×9)</div>
+  <div id="compulsory-list"></div>
+
+  <!-- Optional subject -->
+  <div class="section-label" style="margin-top:1.5rem;">Optional / 4th subject (−2 pts applied)</div>
+  <div id="optional-slot"></div>
+
+  <div class="err" id="err">Please select a grade for every subject before calculating.</div>
+
+  <button class="calc-btn" onclick="calculate()">Calculate my GPA →</button>
+
+  <!-- Result -->
+  <div class="result-card" id="result-card">
+    <div class="result-top">
+      <div>
+        <div class="gpa-label">Your GPA</div>
+        <div class="gpa-number" id="gpa-num">—</div>
+        <div class="result-msg" id="result-msg"></div>
+      </div>
+      <div id="badge-wrap"></div>
+    </div>
+    <div class="breakdown-title">How it was calculated</div>
+    <div id="breakdown-rows"></div>
+  </div>
+
+  <!-- Formula note -->
+  <div class="formula-note">
+    <strong>Official formula:</strong> GPA = (Sum of 9 compulsory subject points + adjusted optional point) ÷ 9<br>
+    Optional subject adjustment: grade point − 2 (minimum 0). An <strong>F in any subject</strong> = overall fail (GPA 0.00).
+  </div>
+
+</div>
+
+<script>
+const COMPULSORY = [
+  { code: "101", name: "Bangla", key: "bangla" },
+  { code: "107", name: "English", key: "english" },
+  { code: "109", name: "Mathematics", key: "math" },
+  { code: "111", name: "Islam & Moral Education", key: "moral", note: "or Hindu / Buddhist / Christian" },
+  { code: "154", name: "ICT", key: "ict", note: "Information & Communication Technology" },
+  { code: "150", name: "Bangladesh & World Identity", key: "bgworld" },
+  { code: "136", name: "Physics", key: "physics" },
+  { code: "137", name: "Chemistry", key: "chemistry" },
+  { code: "138", name: "Biology", key: "biology" },
+];
+
+const GRADE_OPTIONS = `
+  <option value="">Select grade</option>
+  <option value="5">A+  — 5.0 pts</option>
+  <option value="4">A   — 4.0 pts</option>
+  <option value="3.5">A−  — 3.5 pts</option>
+  <option value="3">B   — 3.0 pts</option>
+  <option value="2">C   — 2.0 pts</option>
+  <option value="1">D   — 1.0 pts</option>
+  <option value="0">F   — 0.0 pts (Fail)</option>
+`;
+
+const GRADE_NAMES = { "5":"A+","4":"A","3.5":"A−","3":"B","2":"C","1":"D","0":"F" };
+
+// Optional subject choices and their linked compulsory subject
+const OPTIONAL_CHOICES = [
+  { value: "biology",    label: "Biology",      code: "138", linksTo: "biology",    replacedBy: { name: "Higher Math", code: "126" } },
+  { value: "hmath",      label: "Higher Math",  code: "126", linksTo: "biology",    replacedBy: { name: "Biology",     code: "138" } },
+];
+
+function makeCard(s, isOptional) {
+  return `
+    <div class="subject-card ${isOptional ? 'optional-card' : ''}">
+      <div class="code">${s.code}</div>
+      <div class="subject-name">
+        ${s.name}${isOptional ? '<span class="opt-tag">optional</span>' : ''}
+        ${s.note ? `<small>${s.note}</small>` : ''}
+      </div>
+      <select id="sel-${s.key}">${GRADE_OPTIONS}</select>
+    </div>
+  `;
+}
+
+function makeOptionalCard() {
+  const subjectOptions = OPTIONAL_CHOICES.map(c =>
+    `<option value="${c.value}">${c.label} (${c.code})</option>`
+  ).join('');
+  return `
+    <div class="subject-card optional-card" id="optional-card">
+      <div class="code" id="opt-code">138</div>
+      <div class="subject-name">
+        <select id="sel-opt-subject" style="background:transparent;border:none;color:var(--accent);font-size:14px;padding:0;appearance:auto;cursor:pointer;width:auto;max-width:200px;" onchange="onOptionalSubjectChange(this.value)">
+          ${subjectOptions}
+        </select>
+        <span class="opt-tag">optional</span>
+        <small id="opt-hint">Choosing Biology here swaps compulsory Biology → Higher Math</small>
+      </div>
+      <select id="sel-optional">${GRADE_OPTIONS}</select>
+    </div>
+  `;
+}
+
+document.getElementById("compulsory-list").innerHTML = COMPULSORY.map(s => makeCard(s, false)).join('');
+document.getElementById("optional-slot").innerHTML = makeOptionalCard();
+
+// Called when user changes the optional subject dropdown
+function onOptionalSubjectChange(val) {
+  const choice = OPTIONAL_CHOICES.find(c => c.value === val);
+  if (!choice) return;
+
+  // Update code badge on optional card
+  document.getElementById("opt-code").textContent = choice.code;
+
+  // Update the linked compulsory subject name & code
+  const linkedCard = document.getElementById("compulsory-card-" + choice.linksTo);
+  if (linkedCard) {
+    linkedCard.querySelector(".comp-name").textContent = choice.replacedBy.name;
+    linkedCard.querySelector(".comp-code").textContent = choice.replacedBy.code;
+    // flash highlight
+    linkedCard.style.borderColor = "rgba(200,240,100,0.5)";
+    linkedCard.style.background = "rgba(200,240,100,0.06)";
+    setTimeout(() => {
+      linkedCard.style.borderColor = "";
+      linkedCard.style.background = "";
+    }, 900);
+  }
+
+  // Update hint text
+  const hint = document.getElementById("opt-hint");
+  hint.textContent = `Choosing ${choice.label} here swaps compulsory ${choice.replacedBy.name === "Higher Math" ? "Biology" : "Higher Math"} → ${choice.replacedBy.name}`;
+}
+
+// Re-render compulsory list with IDs for linkable cards
+(function renderCompulsory() {
+  const list = document.getElementById("compulsory-list");
+  list.innerHTML = COMPULSORY.map(s => `
+    <div class="subject-card" id="compulsory-card-${s.key}">
+      <div class="code comp-code">${s.code}</div>
+      <div class="subject-name">
+        <span class="comp-name">${s.name}</span>
+        ${s.note ? `<small>${s.note}</small>` : ''}
+      </div>
+      <select id="sel-${s.key}">${GRADE_OPTIONS}</select>
+    </div>
+  `).join('');
+  // Also render optional now that compulsory is in DOM
+  document.getElementById("optional-slot").innerHTML = makeOptionalCard();
+  // Trigger once to set initial state
+  onOptionalSubjectChange(OPTIONAL_CHOICES[0].value);
+})();
+
+function getVal(key) {
+  const v = document.getElementById("sel-" + key);
+  if (!v) return null;
+  return v.value === "" ? null : parseFloat(v.value);
+}
+
+function getOptionalSubjectName() {
+  const sel = document.getElementById("sel-opt-subject");
+  return sel ? sel.options[sel.selectedIndex].text.split(" (")[0] : "Optional";
+}
+
+function calculate() {
+  const err = document.getElementById("err");
+  err.style.display = "none";
+
+  // Get current compulsory names (may have been swapped by optional subject change)
+  const compVals = COMPULSORY.map(s => ({
+    name: document.querySelector(`#compulsory-card-${s.key} .comp-name`)?.textContent || s.name,
+    val: getVal(s.key)
+  }));
+  const optVal = getVal("optional");
+
+  if (compVals.some(s => s.val === null) || optVal === null) {
+    err.style.display = "block";
+    return;
+  }
+
+  const hasFail = compVals.some(s => s.val === 0) || optVal === 0;
+  const compTotal = compVals.reduce((a, s) => a + s.val, 0);
+  const adjOpt = Math.max(0, optVal - 2);
+  const grand = compTotal + adjOpt;
+  const gpa = hasFail ? 0 : grand / 9;
+  const gpaStr = gpa.toFixed(2);
+
+  const card = document.getElementById("result-card");
+  const gpaNumEl = document.getElementById("gpa-num");
+  const msgEl = document.getElementById("result-msg");
+  const badgeWrap = document.getElementById("badge-wrap");
+  const breakdownEl = document.getElementById("breakdown-rows");
+
+  card.className = "result-card visible " + (hasFail ? "fail" : "pass");
+  gpaNumEl.textContent = gpaStr;
+
+  let badgeClass, badgeText, msg, numClass;
+
+  if (hasFail) {
+    badgeClass = "red"; badgeText = "Failed";
+    msg = "An F grade in any subject results in an overall fail.";
+    numClass = "red";
+  } else if (gpa >= 5) {
+    badgeClass = "green"; badgeText = "Golden A+";
+    msg = "Outstanding! You've achieved the highest possible GPA.";
+    numClass = "green";
+  } else if (gpa >= 4) {
+    badgeClass = "green"; badgeText = "A grade";
+    msg = "Excellent result — A grade overall.";
+    numClass = "green";
+  } else if (gpa >= 3.5) {
+    badgeClass = "green"; badgeText = "A− grade";
+    msg = "Very good performance.";
+    numClass = "";
+  } else if (gpa >= 3) {
+    badgeClass = "yellow"; badgeText = "B grade";
+    msg = "Good result — B grade overall.";
+    numClass = "";
+  } else if (gpa >= 2) {
+    badgeClass = "yellow"; badgeText = "C grade";
+    msg = "Passed with C grade.";
+    numClass = "";
+  } else if (gpa >= 1) {
+    badgeClass = "red"; badgeText = "D grade";
+    msg = "D grade — there's room to improve.";
+    numClass = "red";
+  } else {
+    badgeClass = "red"; badgeText = "Failed";
+    msg = "Unfortunately failed. Keep working hard.";
+    numClass = "red";
+  }
+
+  gpaNumEl.className = "gpa-number " + numClass;
+  badgeWrap.innerHTML = `<div class="grade-badge ${badgeClass}">${badgeText}</div>`;
+  msgEl.textContent = msg;
+
+  const optGradeName = GRADE_NAMES[String(optVal)];
+  const optSubjectName = getOptionalSubjectName();
+  breakdownEl.innerHTML = `
+    ${compVals.map(s => `
+      <div class="breakdown-row">
+        <span class="label">${s.name}</span>
+        <span class="val">${GRADE_NAMES[String(s.val)]} = ${s.val}</span>
+      </div>
+    `).join("")}
+    <div class="breakdown-row">
+      <span class="label">Compulsory total (9 subjects)</span>
+      <span class="val">${compTotal.toFixed(1)}</span>
+    </div>
+    <div class="breakdown-row">
+      <span class="label">${optSubjectName} — optional (${optGradeName} = ${optVal} − 2)</span>
+      <span class="val">+${adjOpt.toFixed(1)}</span>
+    </div>
+    <div class="breakdown-row">
+      <span class="label">Grand total</span>
+      <span class="val">${grand.toFixed(1)}</span>
+    </div>
+    <div class="breakdown-row total">
+      <span class="label">GPA = ${grand.toFixed(1)} ÷ 9</span>
+      <span class="val">${gpaStr}</span>
+    </div>
+  `;
+
+  card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+</script>
+</body>
+</html>
